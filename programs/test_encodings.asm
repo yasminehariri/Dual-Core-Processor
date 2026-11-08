@@ -1,0 +1,18 @@
+; test_encodings.asm - the 16 reference vectors from Section 12, in order.
+; Expected hex: 0650 18C8 2A50 3A50 4850 5CE0 6650 7650 8220 9640 A205 B4BF C63E D283 E010 F000
+ADD R3, R1, R2
+SUB R4, R3, R1
+AND R5, R1, R2
+OR  R5, R1, R2
+XOR R4, R1, R2
+NOR R6, R3, R4
+SLL R3, R1, R2
+SRL R3, R1, R2
+LOAD R1, [0x20]
+STORE R3, [0x40]
+LI R1, 5
+ADDI R2, R2, -1
+BEQ R3, R0, -2
+BNE R1, R2, +3
+JMP 0x10
+HALT

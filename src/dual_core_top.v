@@ -3,7 +3,7 @@
 // Purpose : Top level: two identical cores sharing one dual-port data memory
 // Spec    : Scope document v2.3, Sections 13.1 and 15
 // Author  : Yasmine (RTL lead)
-// Status  : COMPLETE wiring (cores and memory are still stubs)
+// Status  : COMPLETE
 // ============================================================================
 `timescale 1ns/1ps
 `default_nettype none

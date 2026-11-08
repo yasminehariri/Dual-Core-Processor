@@ -3,7 +3,7 @@
 // Purpose : 256 x 8 dual-port shared data memory, Core 0 wins write conflicts
 // Spec    : Scope document v2.3, Section 13.6
 // Author  : Yasmine (RTL lead)
-// Status  : STUB - ports are final, logic still to be written
+// Status  : COMPLETE
 // ============================================================================
 `timescale 1ns/1ps
 `default_nettype none
@@ -22,9 +22,24 @@ module shared_mem #(
     input  wire       we1,
     output wire [7:0] rdata1
 );
-    // TODO (Yasmine): clear all 256 bytes, then $readmemh(INIT);
-    //   one always @(posedge clk): apply Core 1's write first, then Core 0's
-    assign rdata0 = 8'h00;
-    assign rdata1 = 8'h00;
+    reg [7:0] mem [0:255];
+    integer i;
+
+    // clear all 256 bytes, then load the data file ($readmemh fills only the bytes it lists)
+    initial begin
+        for (i = 0; i < 256; i = i + 1) mem[i] = 8'h00;
+        $readmemh(INIT, mem);
+    end
+
+    // Both ports write at the same edge. Core 1's write is applied first and
+    // Core 0's second, so when both hit the same address Core 0's value wins.
+    always @(posedge clk) begin
+        if (we1) mem[addr1] <= wdata1;
+        if (we0) mem[addr0] <= wdata0;
+    end
+
+    // combinational reads: a read in the same cycle as a write sees the old value
+    assign rdata0 = mem[addr0];
+    assign rdata1 = mem[addr1];
 endmodule
 `default_nettype wire
