@@ -1,0 +1,20 @@
+# Quartus output
+quartus/db/
+quartus/incremental_db/
+quartus/output_files/
+quartus/simulation/
+quartus/greybox_tmp/
+quartus/*.qws
+quartus/*.bak
+quartus/*_assignment_defaults.qdf
+# Questa output
+work/
+transcript
+*.wlf
+*.vstf
+modelsim.ini
+# Our generated files
+logs/
+docs/waves/*.vcd
+__pycache__/
+*.pyc

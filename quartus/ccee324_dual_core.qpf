@@ -1,0 +1,6 @@
+QUARTUS_VERSION = "21.1"
+DATE = "09:00:00  November 08, 2026"
+
+# Revisions
+
+PROJECT_REVISION = "ccee324_dual_core"
