@@ -82,6 +82,39 @@ inside `quartus/simulation/questa`, where the `programs/*.hex` paths do not reso
 Assemble after editing a program: `python tools/asm.py programs/<name>.asm -l`
 (`-l` prints a listing: instruction number, hex, source).
 
+## Python simulator (`python_sim/`)
+
+A cycle-accurate Python model of the same processor, used as independent verification
+of the RTL (results: [python_sim/COMPARISON.md](python_sim/COMPARISON.md)).
+Python 3.10+, standard library only. Run everything from the repo root.
+
+```
+python -m python_sim.run --prog0 programs/demo1_core0.hex --prog1 programs/demo1_core1.hex --data programs/data1.hex
+python -m python_sim.run --prog0 programs/demo2_core0.asm --prog1 programs/demo2_core1.asm --data programs/data2.hex --trace
+python -m unittest discover -s python_sim/tests -t .      # or: python -m pytest python_sim/tests
+```
+
+Options: `--trace` prints every executed instruction (cycle, core, pc, hex, disassembly);
+`--max-cycles N` (default 1000). `.asm` files are assembled in memory with `tools/asm.py`.
+Output: R0-R7 of both cores, non-zero memory bytes, cycle counts, and `dual-core time = max(C0, C1)`.
+
+| Python file | Verilog module | Notes |
+|---|---|---|
+| `alu.py` | `alu.v` | `ALU.compute(a, b, alu_op) -> (result, zero, carry, overflow)`, one 9-bit adder for ADD/SUB |
+| `regfile.py` | `regfile.v` | `read()` combinational, `write()` = the clock edge |
+| `decoder.py` | `decoder.v` | `decode(instr)` returns the 7 output fields |
+| `control_unit.py` | `control_unit.v` | `control(opcode)` returns the 11 signals; `.bits()` packs the 14 bits |
+| `pc_unit.py` | `pc_unit.v` | next-PC priority: reset > halt > jump > branch > PC+1 |
+| `instr_mem.py` | `instr_mem.v` | 256 x 16, unused words = HALT (F000) |
+| `shared_mem.py` | `shared_mem.v` | 256 x 8, Core 1 written first so Core 0 wins conflicts |
+| `core.py` | `core.v` | same 4 muxes and 2 counters; `evaluate()` = combinational, `clock()` = posedge |
+| `dual_core.py` | `dual_core_top.v` | both cores evaluate from the current state, then all writes commit together |
+| `hexfile.py`, `disasm.py`, `run.py` | - | `$readmemh` reader, disassembler, CLI |
+
+Tests in `python_sim/tests/` mirror `tb/` one to one (`test_alu.py` <-> `tb_alu.v`, ...).
+If `logs/tb_core.log` and `logs/tb_dual_core.log` exist (from `do run_all.do`), the tests
+also compare the Python cycle-by-cycle trace with Questa's, line for line.
+
 ## Rules
 
 - Never push failing code to `main`; work on a branch and open a pull request.
