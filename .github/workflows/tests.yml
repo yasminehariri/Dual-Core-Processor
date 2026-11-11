@@ -1,0 +1,76 @@
+# CI for the CCEE 324 dual-core processor.
+# 1. Python: assembler tests + python_sim tests
+# 2. Verilog: every testbench with Icarus Verilog (must print ALL PASS, no compile warnings)
+# 3. Python again, now that logs/ exists: the Verilog-vs-Python trace tests must RUN (0 skipped)
+name: tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Assembler tests (tools/test_asm.py)
+        run: python tools/test_asm.py
+
+      - name: Python simulator tests (before Verilog logs exist)
+        run: python -m unittest discover -s python_sim/tests -t . -v
+
+      - name: Install Icarus Verilog
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y iverilog
+          iverilog -V 2>&1 | head -1
+
+      - name: Verilog testbenches (Icarus)
+        shell: bash
+        run: |
+          set -u
+          mkdir -p logs docs/waves
+          fail=0; count=0
+          for tb in tb/tb_*.v; do
+            name=$(basename "$tb" .v)
+            [ "$name" = "tb_template" ] && continue
+            count=$((count + 1))
+            # compile: any error OR any warning fails the job
+            if ! iverilog -g2001 -Wall -o sim src/*.v "$tb" > "logs/${name}_compile.log" 2>&1; then
+              echo "::error::$name: compile error"; cat "logs/${name}_compile.log"; fail=1; continue
+            fi
+            if grep -qi "warning" "logs/${name}_compile.log"; then
+              echo "::error::$name: iverilog warnings"; cat "logs/${name}_compile.log"; fail=1
+            fi
+            # simulate
+            vvp -n sim > "logs/$name.log" 2>&1 || true
+            if grep -q "ALL PASS" "logs/$name.log"; then
+              echo "  $name   $(grep 'ALL PASS' "logs/$name.log")"
+            else
+              echo "::error::$name: FAILED"; grep -E "FAIL|ERROR" "logs/$name.log" || tail -20 "logs/$name.log"; fail=1
+            fi
+          done
+          [ "$fail" -eq 0 ] && echo "ALL $count TESTBENCHES PASSED" || { echo "SOME TESTBENCHES FAILED"; exit 1; }
+
+      - name: Python simulator tests again (trace comparison vs Icarus logs, 0 skipped)
+        shell: bash
+        run: |
+          python -m unittest discover -s python_sim/tests -t . -v 2>&1 | tee pytests.txt
+          status=${PIPESTATUS[0]}
+          [ "$status" -eq 0 ] || exit "$status"
+          if grep -qE '\.\.\. skipped|skipped=' pytests.txt; then   # unittest's own skip markers
+            echo "::error::some python_sim tests were skipped - the Verilog trace logs were not found or not parsed"
+            exit 1
+          fi
+
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: logs
+          path: logs/

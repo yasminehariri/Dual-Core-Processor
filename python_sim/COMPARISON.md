@@ -10,7 +10,7 @@ files. This table compares every result the Verilog testbenches check.
   check printed `PASS` (`ALL PASS (24 checks)` and `ALL PASS (25 checks)` in `logs/`), so
   the RTL produced exactly these values.
 - **Python:** value produced by `python -m python_sim.run ...` and checked by
-  `python_sim/tests/` (19 tests, all passing).
+  `python_sim/tests/` (all passing).
 
 ## Demo 1: independent cores + shared memory (`demo1_core0/1.hex`, `data1.hex`)
 

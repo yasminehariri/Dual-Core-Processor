@@ -1,5 +1,7 @@
 # CCEE 324 Dual-Core Processor
 
+[![tests](https://github.com/yasminehariri/Dual-Core-Processor/actions/workflows/tests.yml/badge.svg)](https://github.com/yasminehariri/Dual-Core-Processor/actions/workflows/tests.yml)
+
 An 8-bit dual-core processor in Verilog: two single-cycle cores, each with its own PC,
 instruction memory, decoder, control unit, register file and ALU, sharing one 256 x 8
 dual-port data memory. 16 instructions (11 required + 5 bonus).
@@ -23,6 +25,8 @@ All Tier A hardware is built and verified in simulation:
 | tb_core | 24 | ALL PASS |
 | tb_dual_core (Demos 1-3 + conflict) | 25 | ALL PASS |
 | tools/test_asm.py | 15 tests | OK |
+| python_sim tests | 26 | OK |
+| Verilog vs Python | all demos identical | see python_sim/COMPARISON.md |
 
 Demo 3: single core 33 cycles, dual core 25 cycles, speedup 1.32x.
 
@@ -34,8 +38,10 @@ Demo 3: single core 33 cycles, dual core 25 cycles, speedup 1.32x.
 | `tb/` | Self-checking testbenches. File name = module name (`tb_alu.v` holds `module tb_alu`). |
 | `programs/` | Assembly programs (`.asm`) and assembled `.hex` files |
 | `tools/` | `asm.py` assembler and its tests |
+| `python_sim/` | Cycle-accurate Python simulator (one class per Verilog module), its tests, pipeline analysis, report-data generator |
 | `quartus/` | Quartus project (`ccee324_dual_core.qpf`) |
-| `docs/` | Report, diagrams, `waves/` (one `.vcd` per testbench), `bug_list.md` |
+| `docs/` | Report, diagrams, `waves/` (one `.vcd` per testbench), `bug_list.md`, `pipeline_*.md/.csv`, `report_data.md` (generated) |
+| `.github/workflows/` | CI: assembler + Python tests, all testbenches on Icarus Verilog, Verilog-vs-Python trace check |
 
 ## Quartus (daily compile check and RTL Viewer)
 
@@ -114,6 +120,23 @@ Output: R0-R7 of both cores, non-zero memory bytes, cycle counts, and `dual-core
 Tests in `python_sim/tests/` mirror `tb/` one to one (`test_alu.py` <-> `tb_alu.v`, ...).
 If `logs/tb_core.log` and `logs/tb_dual_core.log` exist (from `do run_all.do`), the tests
 also compare the Python cycle-by-cycle trace with Questa's, line for line.
+
+**Pipelining analysis (Module 10).** `python_sim/pipeline.py` takes the instruction sequence the
+simulator actually executed and schedules it on a 5-stage pipeline (full forwarding, load-use = 1 stall,
+taken branch = 2 flushed, JMP = 1 flushed), printing a diagram (Markdown + CSV) and CPI / speedup:
+
+```
+python -m python_sim.pipeline programs/demo1_core1.asm --data programs/data1.hex --md docs/pipeline_demo1_core1.md
+python -m python_sim.pipeline programs/demo2_core1.asm --data programs/data2.hex --core 1 --other programs/demo2_core0.asm --md docs/pipeline_demo2_core1.md
+python -m python_sim.pipeline programs/loop_test.asm --data programs/data2.hex --md docs/pipeline_loop_test.md
+```
+
+`--core 1 --other ...` runs the program next to a partner core; Demo 2's Core 1 needs it, because
+it spins until Core 0 sets the flag.
+
+**Report tables.** `python -m python_sim.report_data` regenerates `docs/report_data.md` (cycle tables
+of Demos 1-3, the Demo 3 breakdown and speedup, and a test-summary table read from `logs/` and from
+running the Python tests).
 
 ## Rules
 

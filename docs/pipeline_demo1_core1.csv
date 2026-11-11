@@ -1,0 +1,9 @@
+#,PC,Instruction,1,2,3,4,5,6,7,8,9,10,11,12,13,14
+1,0,"LOAD R1, [0x01]",IF,ID,EX,MEM,WB,,,,,,,,,
+2,1,"LOAD R2, [0x02]",,IF,ID,EX,MEM,WB,,,,,,,,
+3,2,"SLL R3, R1, R2",,,IF,ID,--,EX,MEM,WB,,,,,,
+4,3,"XOR R4, R1, R2",,,,IF,--,ID,EX,MEM,WB,,,,,
+5,4,"LOAD R5, [0x40]",,,,,,IF,ID,EX,MEM,WB,,,,
+6,5,"SUB R6, R5, R1",,,,,,,IF,ID,--,EX,MEM,WB,,
+7,6,"STORE R6, [0x41]",,,,,,,,IF,--,ID,EX,MEM,WB,
+8,7,HALT,,,,,,,,,,IF,ID,EX,MEM,WB
