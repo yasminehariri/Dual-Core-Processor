@@ -18,6 +18,9 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Install matplotlib (for the picture tests)
+        run: pip install matplotlib
+
       - name: Assembler tests (tools/test_asm.py)
         run: python tools/test_asm.py
 
